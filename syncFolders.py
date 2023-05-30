@@ -26,19 +26,14 @@ class SyncFolders:
             logpath (str): Path to the log file.
 
         """
-        # Set the source, replica, sync, and logpath attributes
-
-        self.src = self.modify_paths(sourceFolder) or self.modify_paths(r"C:\Users\varan\OneDrive\Desktop\TestFolder\Source")
-        self.rep = self.modify_paths(replicaFolder) or self.modify_paths(r"C:/Users/varan/OneDrive/Desktop/TestFolder/Replica")
+        self.src = self.modify_paths(sourceFolder)
+        self.rep = self.modify_paths(replicaFolder)
         self.sync = sync
-        self.logpath = self.modify_paths(logpath) or self.modify_paths(r"C:/Users/varan/OneDrive/Desktop/TestFolder/log.txt")
-        
-        # Configure logging with the logpath
+        self.logpath = self.modify_paths(logpath)
         logging.basicConfig(filename=self.logpath, level=logging.DEBUG)
-        # Log the initial parameters
         self.log_initial_parameters()
-         #  calls the function to compare files and folders
         self.compare_files_and_folders()
+        
 
     def modify_paths(self, path):
         """
@@ -105,14 +100,17 @@ class SyncFolders:
             method (str): The method used for copying the files.
 
         """
-        if files:
-            for file in files:
-                src_path_update= self.modify_paths(os.path.join(src_path,file.replace("\\","",1)))
-                rep_path_update= self.modify_paths(os.path.join(rep_path,file.replace("\\","",1)))
-                os.makedirs(os.path.dirname(rep_path_update), exist_ok=True)
-                with open(src_path_update, 'rb') as source_file, open(rep_path_update, 'wb') as destination_file:
-                    destination_file.write(source_file.read())
-                self.files_copied.append({'file':file,'src_location':src_path_update,'rep_location':rep_path_update,'method':method})
+        try:
+            if files:
+                for file in files:
+                    src_path_update= self.modify_paths(os.path.join(src_path,file.replace("\\","",1)))
+                    rep_path_update= self.modify_paths(os.path.join(rep_path,file.replace("\\","",1)))
+                    os.makedirs(os.path.dirname(rep_path_update), exist_ok=True)
+                    with open(src_path_update, 'rb') as source_file, open(rep_path_update, 'wb') as destination_file:
+                        destination_file.write(source_file.read())
+                    self.files_copied.append({'file':file,'src_location':src_path_update,'rep_location':rep_path_update,'method':method})
+        except OSError as e:
+            print(f"Error copying folder'{file}' at '{src_path_update}': {e}")
    
     def copyFolders(self, folders, src_path, rep_path,method):
         """
@@ -125,20 +123,22 @@ class SyncFolders:
             method (str): The method used for copying the folders.
 
         """
-        if folders:
-            for folder in folders:
-                src_folder_path = self.modify_paths(os.path.join(src_path, folder.replace("\\","",1)))
-                dest_folder_path = self.modify_paths(os.path.join(rep_path, folder.replace("\\","",1)))
-                if os.path.isdir(src_folder_path):
-                    os.makedirs(dest_folder_path, exist_ok=True)
-                    self.folders_copied.append({'folder': os.path.basename(folder),'src_location': src_folder_path, 'rep_location': dest_folder_path,'method':method})
-                    subfolders = os.listdir(src_folder_path)
-                    self.copyFolders(subfolders, src_folder_path, dest_folder_path,"Copy")
-                else:
-                    src_file_path = src_folder_path.replace(os.path.basename(folder), '')
-                    dest_file_path = dest_folder_path.replace(os.path.basename(folder), '')
-                    self.copyFiles([folder],src_file_path,dest_file_path,"Copy")
-
+        try:
+            if folders:
+                for folder in folders:
+                    src_folder_path = self.modify_paths(os.path.join(src_path, folder.replace("\\","",1)))
+                    dest_folder_path = self.modify_paths(os.path.join(rep_path, folder.replace("\\","",1)))
+                    if os.path.isdir(src_folder_path):
+                        os.makedirs(dest_folder_path, exist_ok=True)
+                        self.folders_copied.append({'folder': os.path.basename(folder),'src_location': src_folder_path, 'rep_location': dest_folder_path,'method':method})
+                        subfolders = os.listdir(src_folder_path)
+                        self.copyFolders(subfolders, src_folder_path, dest_folder_path,"Copy")
+                    else:
+                        src_file_path = src_folder_path.replace(os.path.basename(folder), '')
+                        dest_file_path = dest_folder_path.replace(os.path.basename(folder), '')
+                        self.copyFiles([folder],src_file_path,dest_file_path,"Copy")
+        except OSError as e:
+            print(f"Error copying folder'{folder}' at '{src_folder_path}': {e}")
 
     def removeFolder(self,path):
         """
@@ -170,18 +170,21 @@ class SyncFolders:
             rep_path (str): The replica path where the files will be updated.
 
         """
-        if files:
-            for file in files:
-                src_path_updated= self.modify_paths(os.path.join(src_path,file.replace("\\","",1)))
-                rep_path_updated= self.modify_paths(os.path.join(rep_path,file.replace("\\","",1)))
-                src_last_modified = os.path.getmtime(src_path_updated)
-                rep_last_modified = os.path.getmtime(rep_path_updated)
-                
-                if src_last_modified>rep_last_modified:
-                    os.remove(rep_path_updated)
+        try:
+            if files:
+                for file in files:
+                    src_path_updated= self.modify_paths(os.path.join(src_path,file.replace("\\","",1)))
+                    rep_path_updated= self.modify_paths(os.path.join(rep_path,file.replace("\\","",1)))
+                    src_last_modified = os.path.getmtime(src_path_updated)
+                    rep_last_modified = os.path.getmtime(rep_path_updated)
                     
-                    self.copyFiles([file],src_path_updated.replace(os.path.basename(file), ''),rep_path_updated.replace(os.path.basename(file), ''),"Modify")                 
-    
+                    if src_last_modified>rep_last_modified:
+                        os.remove(rep_path_updated)
+                        
+                        self.copyFiles([file],src_path_updated.replace(os.path.basename(file), ''),rep_path_updated.replace(os.path.basename(file), ''),"Modify")                 
+        except OSError as e:
+            print(f"Error modifying file'{file}' at '{src_path_updated}': {e}")
+            
     def updateModifiedFolders(self,folders,src_path,rep_path):
         """
         Updates the modified folders by copying them from the source path to the replica path.
@@ -192,16 +195,19 @@ class SyncFolders:
             rep_path (str): The replica path where the folders will be updated.
 
         """
-        if folders:
-            for folder in folders:
-                src_path_updated= self.modify_paths(os.path.join(src_path,folder.replace("\\","",1)))
-                rep_path_updated= self.modify_paths(os.path.join(rep_path, folder.replace("\\","",1)))
-                src_last_modified = os.path.getmtime(src_path_updated)
-                rep_last_modified = os.path.getmtime(rep_path_updated)
+        try:
+            if folders:
+                for folder in folders:
+                    src_path_updated= self.modify_paths(os.path.join(src_path,folder.replace("\\","",1)))
+                    rep_path_updated= self.modify_paths(os.path.join(rep_path, folder.replace("\\","",1)))
+                    src_last_modified = os.path.getmtime(src_path_updated)
+                    rep_last_modified = os.path.getmtime(rep_path_updated)
 
-                if src_last_modified>rep_last_modified:
-                    self.removeFolder(rep_path_updated)
-                    self.copyFolders([folder],src_path_updated,rep_path_updated,"Modify")
+                    if src_last_modified>rep_last_modified:
+                        self.removeFolder(rep_path_updated)
+                        self.copyFolders([folder],src_path_updated,rep_path_updated,"Modify")
+        except OSError as e:
+            print(f"Error modifying folder'{folder}' at '{src_path_updated}': {e}")
 
     def removeDeletedFolders(self,folders,rep_path):
         """
@@ -359,22 +365,17 @@ class SyncFolders:
         src_folders = [folder.replace(self.src, '') for folder in src_folders]
         rep_folders = [folder.replace(self.rep, '') for folder in rep_folders]
         
-        #Folders and subfolders that are present both in Sorce Folder and Replica Folder
-        folders_in_both_src_rep = list(set(src_folders) & set(rep_folders))
-
+        
         #Check if these common folders have been updated and update if necessary
+        folders_in_both_src_rep = list(set(src_folders) & set(rep_folders))
         self.updateModifiedFolders(folders_in_both_src_rep,self.src,self.rep)
 
-        #Folders and subfolders that are presentin Sorce Folder and not Replica Folder
-        folders_in_src_not_rep=list(set(src_folders)-set(rep_folders))
-
         #Copy/Create the folders in replica
+        folders_in_src_not_rep=list(set(src_folders)-set(rep_folders))
         self.copyFolders(folders_in_src_not_rep,self.src,self.rep,"Copy")
 
-        #Folders and subfolders that are present in Replica Folder and not Source Folder
-        folders_in_rep_not_src = list(set(rep_folders)-set(src_folders))
-
         #Remove the folders from replica
+        folders_in_rep_not_src = list(set(rep_folders)-set(src_folders))
         self.removeDeletedFolders(folders_in_rep_not_src,self.rep)
 
         #get the updated list of files and folders so we can remove the already copied subfolders and files for further processing
@@ -385,22 +386,17 @@ class SyncFolders:
         src_files1 = [file.replace(self.src, '') for file in src_files1]
         rep_files1 = [file.replace(self.rep, '') for file in rep_files1]
 
-        #Files that are present both in Sorce Folder and Replica Folder
-        files_in_both_src_rep=list(set(src_files1) & set(rep_files1))
-
+        
         #Check if these common files have been updated and update if necessary
+        files_in_both_src_rep=list(set(src_files1) & set(rep_files1))
         self.updateModifiedFiles(files_in_both_src_rep,self.src,self.rep)
 
-        #Files that are presentin Sorce Folder and not Replica Folder
-        files_in_src_not_rep=list(set(src_files1)-set(rep_files1))
-
         #Copy/Create the files in replica
+        files_in_src_not_rep=list(set(src_files1)-set(rep_files1))
         self.copyFiles(files_in_src_not_rep,self.src,self.rep,"Copy")
 
-        #Files that are present in Replica Folder and not Source Folder
-        files_in_rep_not_src=list(set(rep_files1)-set(src_files1))
-
         #Remove the files from replica
+        files_in_rep_not_src=list(set(rep_files1)-set(src_files1))
         self.removeDeletedFiles(files_in_rep_not_src,self.rep)
 
 
