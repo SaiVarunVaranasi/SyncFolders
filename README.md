@@ -2,7 +2,7 @@
 
 # SyncFolders
 
-`SyncFolders` is a Python script that synchronizes files and folders between a source folder and a replica folder. It compares the contents of the two folders and performs the necessary operations to ensure that both folders are in sync.
+`SyncFolders` is a Python script that synchronizes files and folders between a source folder and a replica folder. It compares the contents of the two folders and performs the necessary operations to ensure that both folders are in sync. It is a one way sync i.e the changes in source folder will be applied to replica folder but the changes to replica folder will not reflect in source folder.
 
 ## Features
 
